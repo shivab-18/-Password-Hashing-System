@@ -1,0 +1,30 @@
+from flask import Flask, render_template, request
+import pickle
+import webbrowser
+import threading
+from feature_extractor import extract_features
+
+app = Flask(__name__)
+
+with open('phish_model.pkl', 'rb') as f:
+
+    model = pickle.load(f)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/check', methods=['POST'])
+def check():
+    url = request.form['url']
+    features = extract_features(url)
+    prediction = model.predict([features])[0]
+    result = 'SAFE' if prediction == 0 else 'PHISHING'
+    return render_template('result.html', url=url, result=result)
+
+def open_browser():
+    webbrowser.open_new('http://127.0.0.1:5000/')
+
+if __name__ == '__main__':
+    threading.Timer(1.5, open_browser).start()  # wait a bit before opening
+    app.run(debug=True)
